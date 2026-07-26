@@ -13,6 +13,7 @@ const analyticsRoutes = require('./routes/analytics.routes');
 const redirectRoutes = require('./routes/redirect.routes');
 
 const app = express();
+const allowedOrigins = settings.corsOriginList;
 
 // helmet() sets several security headers; disable the default CSP since this
 // is a pure JSON/redirect API with no HTML to protect, matching the original
@@ -21,7 +22,13 @@ app.use(helmet({ contentSecurityPolicy: false }));
 
 app.use(
   cors({
-    origin: settings.corsOriginList,
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(null, false);
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'X-Admin-Key'],

@@ -25,10 +25,16 @@ function required(name) {
 // plain "postgresql://" / "postgres://" scheme, so we normalize here
 // instead of asking anyone to edit their .env file.
 function normalizePostgresUrl(rawUrl) {
-  if (!rawUrl.startsWith('postgresql+psycopg://') && !rawUrl.startsWith('postgres+psycopg://')) {
-    throw new Error(
-      'DATABASE_URL must use the postgresql+psycopg:// scheme (same value as the original FastAPI backend).'
-    );
+  if (!rawUrl || typeof rawUrl !== 'string') {
+    throw new Error('DATABASE_URL must be set.');
+  }
+  if (
+    !rawUrl.startsWith('postgresql://') &&
+    !rawUrl.startsWith('postgres://') &&
+    !rawUrl.startsWith('postgresql+psycopg://') &&
+    !rawUrl.startsWith('postgres+psycopg://')
+  ) {
+    throw new Error('DATABASE_URL must use a valid PostgreSQL URL.');
   }
   return rawUrl.replace('postgresql+psycopg://', 'postgresql://').replace('postgres+psycopg://', 'postgresql://');
 }
@@ -48,6 +54,9 @@ function validateHashSecret(value) {
 }
 
 const rawDatabaseUrl = required('DATABASE_URL');
+const corsOrigins = [process.env.CORS_ORIGINS, process.env.FRONTEND_URL]
+  .filter(Boolean)
+  .join(',');
 
 const settings = {
   appName: process.env.APP_NAME || 'Amazon Smart Link Shortener',
@@ -61,7 +70,7 @@ const settings = {
   ipHashSecret: validateHashSecret(required('IP_HASH_SECRET')),
   seedDomains: process.env.SEED_DOMAINS || 'localhost',
   trustProxyHeaders: toBool(process.env.TRUST_PROXY_HEADERS, false),
-  corsOrigins: process.env.CORS_ORIGINS || 'http://localhost:3000,http://localhost:5173',
+  corsOrigins: corsOrigins || 'http://localhost:3000,http://localhost:5173',
   port: Number(process.env.PORT) || 8000,
 };
 

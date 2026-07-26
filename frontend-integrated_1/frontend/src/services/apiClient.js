@@ -2,26 +2,27 @@
 // API contract is untouched — only the file location changed during the
 // frontend restructure. Backend base URL / admin key mechanism preserved.
 
-const ENV_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000'
-const ENV_ADMIN_KEY = import.meta.env.VITE_ADMIN_API_KEY || 'change-this-secret'
+const ENV_BASE_URL = import.meta.env.VITE_API_BASE_URL || (import.meta.env.DEV ? 'http://127.0.0.1:8000' : '')
 
 export const getApiConfig = () => ({
   baseUrl: localStorage.getItem('linkorbit_api_base_url') || ENV_BASE_URL,
-  adminKey: localStorage.getItem('linkorbit_admin_key') || ENV_ADMIN_KEY,
+  adminKey: localStorage.getItem('linkorbit_admin_key') || '',
 })
 
 export const saveApiConfig = ({ baseUrl, adminKey }) => {
-  localStorage.setItem('linkorbit_api_base_url', baseUrl.replace(/\/$/, ''))
-  localStorage.setItem('linkorbit_admin_key', adminKey)
+  const normalizedBaseUrl = baseUrl ? baseUrl.replace(/\/$/, '') : ''
+  localStorage.setItem('linkorbit_api_base_url', normalizedBaseUrl)
+  localStorage.setItem('linkorbit_admin_key', adminKey ? adminKey.trim() : '')
 }
 
 export async function apiRequest(path, options = {}) {
   const { baseUrl, adminKey } = getApiConfig()
-  const response = await fetch(`${baseUrl}${path}`, {
+  const normalizedBaseUrl = baseUrl ? baseUrl.replace(/\/$/, '') : ''
+  const response = await fetch(`${normalizedBaseUrl}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      'X-Admin-Key': adminKey,
+      ...(adminKey ? { 'X-Admin-Key': adminKey } : {}),
       ...(options.headers || {}),
     },
   })
