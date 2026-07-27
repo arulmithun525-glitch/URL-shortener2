@@ -7,10 +7,17 @@ const settings = require('./config');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const healthRoutes = require('./routes/health.routes');
-const domainsRoutes = require('./routes/domains.routes');
-const linksRoutes = require('./routes/links.routes');
-const analyticsRoutes = require('./routes/analytics.routes');
 const redirectRoutes = require('./routes/redirect.routes');
+
+function loadDatabaseRoutes() {
+  const domainsRoutes = require('./routes/domains.routes');
+  const linksRoutes = require('./routes/links.routes');
+  const analyticsRoutes = require('./routes/analytics.routes');
+
+  app.use('/api/domains', domainsRoutes);
+  app.use('/api/links', linksRoutes);
+  app.use('/api/links/:linkId/analytics', analyticsRoutes);
+}
 
 const app = express();
 const allowedOrigins = settings.corsOriginList;
@@ -45,9 +52,13 @@ if (settings.trustProxyHeaders) {
 }
 
 app.use(healthRoutes);
-app.use('/api/domains', domainsRoutes);
-app.use('/api/links', linksRoutes);
-app.use('/api/links/:linkId/analytics', analyticsRoutes);
+
+try {
+  loadDatabaseRoutes();
+} catch (error) {
+  console.warn('Database routes unavailable during startup:', error.message);
+}
+
 // The catch-all redirect router must remain last.
 app.use(redirectRoutes);
 
